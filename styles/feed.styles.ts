@@ -2,6 +2,8 @@ import { COLORS } from '@/constants/theme'
 import { Dimensions, Platform, StyleSheet } from 'react-native'
 
 const { width } = Dimensions.get('window')
+const isWeb = Platform.OS === 'web'
+const postWidth = isWeb ? Math.min(width, 600) : width
 
 export const styles = StyleSheet.create({
   container: {
@@ -59,6 +61,8 @@ export const styles = StyleSheet.create({
   },
   post: {
     marginBottom: 16,
+    alignSelf: 'center',
+    width: postWidth,
   },
   postHeader: {
     flexDirection: 'row',
@@ -82,8 +86,8 @@ export const styles = StyleSheet.create({
     color: COLORS.white,
   },
   postImage: {
-    width: width,
-    height: width,
+    width: postWidth,
+    height: postWidth,
   },
   postActions: {
     flexDirection: 'row',
