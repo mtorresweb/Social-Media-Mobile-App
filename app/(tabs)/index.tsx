@@ -49,7 +49,7 @@ export default function Index() {
         keyExtractor={(item) => item._id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 60 }}
-        ListHeaderComponent={<StoriesSection />}
+        /* ListHeaderComponent={<StoriesSection />} */
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
