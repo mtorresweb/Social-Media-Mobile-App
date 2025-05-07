@@ -1,90 +1,79 @@
-# Welcome to your Convex functions directory!
+# Convex Backend for Social Media App
 
-Write your Convex functions here.
-See https://docs.convex.dev/functions for more.
+This directory contains the Convex functions and schema for the Social Media Mobile App.
 
-A query function that takes two arguments looks like:
+## Overview
 
-```ts
-// functions.js
-import { query } from "./_generated/server";
-import { v } from "convex/values";
+[Convex](https://www.convex.dev/) is a backend platform that provides a real-time database, serverless functions, and automatic syncing with your React Native frontend.
 
-export const myQueryFunction = query({
-  // Validators for arguments.
-  args: {
-    first: v.number(),
-    second: v.string(),
-  },
+## Features
 
-  // Function implementation.
-  handler: async (ctx, args) => {
-    // Read the database as many times as you need here.
-    // See https://docs.convex.dev/database/reading-data.
-    const documents = await ctx.db.query("tablename").collect();
+- **Real-time data**: All database changes sync automatically to connected clients
+- **TypeScript support**: Fully typed API for better development experience
+- **Authentication**: Integration with Clerk for secure user authentication
+- **Serverless functions**: Query and mutation functions for data operations
 
-    // Arguments passed from the client are properties of the args object.
-    console.log(args.first, args.second);
+## Schema & Data Model
 
-    // Write arbitrary JavaScript here: filter, aggregate, build derived data,
-    // remove non-public properties, or create new objects.
-    return documents;
-  },
-});
-```
+The database schema includes:
 
-Using this query function in a React component looks like:
+- **Users**: User profiles and account information
+- **Posts**: Social media posts with text, images, likes, etc.
+- **Comments**: User comments on posts
+- **Bookmarks**: Saved posts for users
+- **Notifications**: User notifications for interactions
 
-```ts
-const data = useQuery(api.functions.myQueryFunction, {
-  first: 10,
-  second: "hello",
-});
-```
+## Available Functions
 
-A mutation function looks like:
+### Posts
+- Create, read, update, and delete posts
+- Like/unlike posts
+- Get feed based on following
 
-```ts
-// functions.js
-import { mutation } from "./_generated/server";
-import { v } from "convex/values";
+### Users
+- User profile management
+- Following/unfollowing users
+- User search
 
-export const myMutationFunction = mutation({
-  // Validators for arguments.
-  args: {
-    first: v.string(),
-    second: v.string(),
-  },
+### Comments
+- Add comments to posts
+- Like/unlike comments
+- Get comments for a post
 
-  // Function implementation.
-  handler: async (ctx, args) => {
-    // Insert or modify documents in the database here.
-    // Mutations can also read from the database like queries.
-    // See https://docs.convex.dev/database/writing-data.
-    const message = { body: args.first, author: args.second };
-    const id = await ctx.db.insert("messages", message);
+### Bookmarks
+- Save/unsave posts
+- Retrieve bookmarked posts
 
-    // Optionally, return a value from your mutation.
-    return await ctx.db.get(id);
-  },
-});
-```
+### Notifications
+- Create notifications
+- Mark notifications as read
+- Get user notifications
 
-Using this mutation function in a React component looks like:
+## Getting Started
 
-```ts
-const mutation = useMutation(api.functions.myMutationFunction);
-function handleButtonPress() {
-  // fire and forget, the most common way to use mutations
-  mutation({ first: "Hello!", second: "me" });
-  // OR
-  // use the result once the mutation has completed
-  mutation({ first: "Hello!", second: "me" }).then((result) =>
-    console.log(result),
-  );
-}
-```
+1. **Set up Convex**
+   ```bash
+   npx convex dev
+   ```
 
-Use the Convex CLI to push your functions to a deployment. See everything
-the Convex CLI can do by running `npx convex -h` in your project root
-directory. To learn more, launch the docs with `npx convex docs`.
+2. **Configure environment variables**
+   Create a `.env` file with your Convex and Clerk credentials
+
+3. **Run with the frontend**
+   Start both the Convex dev server and the React Native app
+
+## Documentation
+
+For more information on how to use Convex:
+- [Convex Documentation](https://docs.convex.dev/)
+- [TypeScript with Convex](https://docs.convex.dev/typescript)
+- [Authentication](https://docs.convex.dev/auth)
+- [Database queries](https://docs.convex.dev/database/reading-data)
+- [Database mutations](https://docs.convex.dev/database/writing-data)
+
+## Development Workflow
+
+1. Define your schema in `schema.ts`
+2. Create query and mutation functions in appropriate files
+3. Generate types with `npx convex dev`
+4. Import and use functions in your React Native app
