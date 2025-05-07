@@ -1,30 +1,56 @@
+import { Loader } from '@/components/Loader'
+import Post from '@/components/Post'
 import { api } from '@/convex/_generated/api'
-import { Doc } from '@/convex/_generated/dataModel'
+import { Id } from '@/convex/_generated/dataModel'
 import { useAuth } from '@clerk/clerk-expo'
 import { useQuery, useMutation } from 'convex/react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   View,
   Text,
   TouchableOpacity,
   ScrollView,
-  FlatList,
-  TouchableWithoutFeedback,
   Platform,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Keyboard,
+  TextInput,
+  Modal,
+  FlatList,
+  Dimensions,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { COLORS } from '@/constants/theme' // Ensure COLORS is imported
-import { Loader } from '@/components/Loader' // Ensure Loader component is defined
+import { COLORS } from '@/constants/theme'
 import { styles } from '@/styles/profile.styles'
 import { Image } from 'expo-image'
-import { Modal } from 'react-native'
-import { Keyboard } from 'react-native'
-import { KeyboardAvoidingView } from 'react-native'
-import { TextInput } from 'react-native'
+
+const { width } = Dimensions.get('window')
+const NUM_COLUMNS = 3
+const GRID_ITEM_SIZE = width / NUM_COLUMNS - 2
+
+// Define the post type to match what Post component expects
+type PostType = {
+  _id: Id<'posts'>;
+  imageUrl: string;
+  caption?: string;
+  likes: number;
+  comments: number;
+  _creationTime: number;
+  isLiked: boolean;
+  isBookmarked: boolean;
+  author: {
+    _id: string;
+    username: string;
+    image: string;
+  };
+  userId?: Id<'users'>;
+  storageId?: Id<'_storage'>;
+};
 
 export default function Profile() {
   const { signOut, userId } = useAuth()
   const [isEditModalVisible, setIsEditModalVisible] = useState(false)
+  const [selectedPost, setSelectedPost] = useState<PostType | null>(null)
 
   // Fetch user data
   const currentUser = useQuery(
@@ -32,15 +58,25 @@ export default function Profile() {
     userId ? { clerkId: userId } : 'skip'
   )
 
+  // Fetch feed posts to get full post data
+  const feedPosts = useQuery(api.posts.getFeedPosts)
+  const userPosts = useQuery(api.posts.getPostsByUser, {})
+
   // Handle profile editing state
   const [editedProfile, setEditedProfile] = useState({
-    fullname: currentUser?.fullname || '',
-    bio: currentUser?.bio || '',
+    fullname: '',
+    bio: '',
   })
 
-  // Handle selected post
-  const [selectedPost, setSelectedPost] = useState<Doc<'posts'> | null>(null)
-  const posts = useQuery(api.posts.getPostsByUser, {})
+  // Update form data when user data is loaded
+  useEffect(() => {
+    if (currentUser) {
+      setEditedProfile({
+        fullname: currentUser.fullname || '',
+        bio: currentUser.bio || '',
+      })
+    }
+  }, [currentUser])
 
   // Mutation to update profile
   const updateProfile = useMutation(api.users.updateProfile)
@@ -52,7 +88,25 @@ export default function Profile() {
   }
 
   // Show loader if data is still loading
-  if (!currentUser || posts === undefined) return <Loader />
+  if (!currentUser || !userPosts || !feedPosts) return <Loader />
+
+  // Get enhanced posts with full details
+  const posts = userPosts.map(post => {
+    // Try to find the full post data in feedPosts
+    const fullPost = feedPosts.find(fp => fp._id === post._id)
+    
+    // If found, use that data, otherwise use a default structure
+    return fullPost || {
+      ...post,
+      isLiked: false,
+      isBookmarked: false,
+      author: {
+        _id: currentUser._id,
+        username: currentUser.username,
+        image: currentUser.image
+      }
+    }
+  }) as PostType[]
 
   return (
     <View style={styles.container}>
@@ -74,7 +128,7 @@ export default function Profile() {
           <View style={styles.avatarAndStats}>
             <View style={styles.avatarContainer}>
               <Image
-                source={currentUser.image} // Ensure image is properly formatted
+                source={currentUser.image}
                 style={styles.avatar}
                 contentFit="cover"
                 transition={200}
@@ -111,36 +165,58 @@ export default function Profile() {
             >
               <Text style={styles.editButtonText}>Edit Profile</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity style={styles.shareButton}>
-              <Ionicons name="share-outline" size={20} color={COLORS.white} />
-            </TouchableOpacity>
           </View>
         </View>
 
-        {/* NO POSTS HANDLER */}
-        {posts?.length === 0 && <NoPostsFound />}
-
-        <FlatList
-          data={posts}
-          numColumns={3}
-          scrollEnabled={false}
-          //keyExtractor={(item) => item._id} // Ensure each item has a unique key
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.gridItem}
-              onPress={() => setSelectedPost(item)} // Fixed arrow function syntax
-            >
-              <Image
-                source={item.imageUrl} // Ensure image is properly formatted
-                style={styles.gridImage}
-                contentFit="cover"
-                transition={200}
-              />
-            </TouchableOpacity>
-          )}
-        />
+        {/* POSTS SECTION */}
+        {posts.length === 0 ? (
+          <NoPostsFound />
+        ) : (
+          <View style={styles.postsGrid}>
+            <FlatList
+              data={posts}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.gridItem}
+                  onPress={() => setSelectedPost(item)}
+                >
+                  <Image
+                    source={item.imageUrl}
+                    style={[styles.gridImage, { width: GRID_ITEM_SIZE, height: GRID_ITEM_SIZE }]}
+                    contentFit="cover"
+                  />
+                </TouchableOpacity>
+              )}
+              numColumns={NUM_COLUMNS}
+              keyExtractor={(item) => item._id}
+              scrollEnabled={false}
+            />
+          </View>
+        )}
       </ScrollView>
+
+      {/* Post Detail Modal */}
+      {selectedPost && (
+        <Modal
+          visible={!!selectedPost}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setSelectedPost(null)}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.postDetailContainer}>
+              <View style={styles.postDetailHeader}>
+                <TouchableOpacity onPress={() => setSelectedPost(null)}>
+                  <Ionicons name="close" size={24} color={COLORS.white} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView>
+                <Post post={selectedPost} />
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      )}
 
       {/* Edit Profile Modal */}
       <Modal
@@ -198,50 +274,15 @@ export default function Profile() {
           </KeyboardAvoidingView>
         </TouchableWithoutFeedback>
       </Modal>
-
-      {/* SELECTED IMAGE MODAL */}
-      <Modal
-        visible={!!selectedPost}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setSelectedPost(null)}
-      >
-        <View style={styles.modalBackdrop}>
-          {selectedPost && (
-            <View style={styles.postDetailContainer}>
-              {/* Modal Header with Close Button */}
-              <View style={styles.postDetailHeader}>
-                <TouchableOpacity onPress={() => setSelectedPost(null)}>
-                  <Ionicons name="close" size={24} color={COLORS.white} />
-                </TouchableOpacity>
-              </View>
-
-              {/* Selected Image */}
-              <Image
-                source={selectedPost.imageUrl}
-                cachePolicy={'memory-disk'}
-                style={styles.postDetailImage}
-              />
-            </View>
-          )}
-        </View>
-      </Modal>
     </View>
   )
 }
 
 function NoPostsFound() {
   return (
-    <View
-      style={{
-        height: '100%',
-        backgroundColor: COLORS.background,
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}
-    >
+    <View style={styles.noPostsContainer}>
       <Ionicons name="images-outline" size={48} color={COLORS.primary} />
-      <Text>No posts yet</Text>
+      <Text style={styles.noPostsText}>No posts yet</Text>
     </View>
   )
 }

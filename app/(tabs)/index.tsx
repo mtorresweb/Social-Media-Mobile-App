@@ -21,15 +21,17 @@ export default function Index() {
   const [refreshing, setRefreshing] = useState(false)
 
   const posts = useQuery(api.posts.getFeedPosts)
-  if (posts === undefined) return <Loader />
-  if (posts.length === 0) return <NoPostsFound />
-
+  
   const onRefresh = () => {
     setRefreshing(true)
+    // Use setTimeout to simulate refresh
+    setTimeout(() => {
+      setRefreshing(false)
+    }, 2000)
   }
-  setTimeout(() => {
-    setRefreshing(false)
-  }, 2000)
+
+  if (posts === undefined) return <Loader />
+  if (posts.length === 0) return <NoPostsFound />
 
   return (
     <View style={styles.container}>
@@ -55,10 +57,11 @@ export default function Index() {
             tintColor={COLORS.primary}
           />
         }
-      ></FlatList>
+      />
     </View>
   )
 }
+
 const NoPostsFound = () => (
   <View
     style={{

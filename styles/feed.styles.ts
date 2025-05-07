@@ -1,7 +1,7 @@
 import { COLORS } from '@/constants/theme'
 import { Dimensions, Platform, StyleSheet } from 'react-native'
 
-const { width } = Dimensions.get('window')
+const { width, height } = Dimensions.get('window')
 const isWeb = Platform.OS === 'web'
 const postWidth = isWeb ? Math.min(width, 600) : width
 
@@ -219,5 +219,26 @@ export const styles = StyleSheet.create({
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+  },
+  postDetailContainer: {
+    backgroundColor: COLORS.background,
+    maxHeight: height * 0.9,
+  },
+  postDetailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    padding: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: COLORS.surface,
+  },
+  postDetailImage: {
+    width: width,
+    height: width,
   },
 })

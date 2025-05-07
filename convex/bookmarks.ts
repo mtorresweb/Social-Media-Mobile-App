@@ -43,10 +43,35 @@ export const getBookmarkedPosts = query({
     const bookmarksWithInfo = await Promise.all(
       bookmarks.map(async (bookmark) => {
         const post = await ctx.db.get(bookmark.postId)
-        return post // Ensure this returns the post
+        if (!post) return null // Handle deleted posts
+        
+        // Get author information
+        const author = await ctx.db.get(post.userId)
+        if (!author) return null // Skip if author doesn't exist
+        
+        // Check if the current user has liked the post
+        const like = await ctx.db
+          .query('likes')
+          .withIndex('by_user_and_post', (q) =>
+            q.eq('userId', currentUser._id).eq('postId', bookmark.postId)
+          )
+          .first()
+        
+        // Enhance post with additional information
+        return {
+          ...post,
+          isLiked: !!like,
+          isBookmarked: true, // It's a bookmark by definition
+          author: {
+            _id: author._id,
+            username: author.username,
+            image: author.image,
+          },
+        }
       })
     )
 
-    return bookmarksWithInfo
+    // Filter out any null values (deleted posts)
+    return bookmarksWithInfo.filter(post => post !== null)
   },
 })

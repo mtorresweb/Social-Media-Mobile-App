@@ -5,8 +5,8 @@ import { styles } from '@/styles/feed.styles'
 import { Ionicons } from '@expo/vector-icons'
 import { useMutation, useQuery } from 'convex/react'
 import { Image } from 'expo-image'
-import { Link } from 'expo-router'
-import { useState } from 'react'
+import { Link, usePathname } from 'expo-router'
+import { useState, useEffect } from 'react'
 import { View, Text, TouchableOpacity } from 'react-native'
 import CommentsModal from './CommentsModal'
 import { formatDistanceToNow } from 'date-fns'
@@ -28,19 +28,32 @@ type PostProps = {
       image: string
     }
   }
+  onUnbookmark?: () => void
 }
 
-//todo: add the actual type
-export default function Post({ post }: PostProps) {
+export default function Post({ post, onUnbookmark }: PostProps) {
   const [isLiked, setIsLiked] = useState(post.isLiked)
   const [isBookmarked, setIsBookmarked] = useState(post.isBookmarked)
   const [showComments, setShowComments] = useState(false)
+  const [likesCount, setLikesCount] = useState(post.likes)
+  const [commentsCount, setCommentsCount] = useState(post.comments)
 
   const { user } = useUser()
   const currentUser = useQuery(
     api.users.getUserByClerkId,
     user ? { clerkId: user.id } : 'skip'
   )
+  
+  const pathname = usePathname()
+  const isBookmarksPage = pathname.includes('bookmarks')
+
+  // Update local states when post data changes
+  useEffect(() => {
+    setLikesCount(post.likes)
+    setCommentsCount(post.comments)
+    setIsLiked(post.isLiked)
+    setIsBookmarked(post.isBookmarked)
+  }, [post.likes, post.comments, post.isLiked, post.isBookmarked])
 
   const toggleLike = useMutation(api.posts.toggleLike)
   const toggleBookmark = useMutation(api.bookmarks.toggleBookmark)
@@ -49,7 +62,7 @@ export default function Post({ post }: PostProps) {
   const handleLike = async () => {
     try {
       const newIsLiked = await toggleLike({ postId: post._id })
-
+      setLikesCount(prevCount => newIsLiked ? prevCount + 1 : prevCount - 1)
       setIsLiked(newIsLiked)
     } catch (error) {
       console.error('Error toggling like:', error)
@@ -57,8 +70,17 @@ export default function Post({ post }: PostProps) {
   }
 
   const handleBookmark = async () => {
-    const newIsBookmarked = await toggleBookmark({ postId: post._id })
-    setIsBookmarked(newIsBookmarked)
+    try {
+      const wasBookmarked = isBookmarked
+      const newIsBookmarked = await toggleBookmark({ postId: post._id })
+      setIsBookmarked(newIsBookmarked)
+      
+      if (isBookmarksPage && wasBookmarked && !newIsBookmarked && onUnbookmark) {
+        onUnbookmark()
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error)
+    }
   }
 
   const handleDelete = async () => {
@@ -68,10 +90,14 @@ export default function Post({ post }: PostProps) {
       console.error('Error deleting post:', error)
     }
   }
+
+  const handleCommentAdded = () => {
+    setCommentsCount(prevCount => prevCount + 1)
+  }
+
   return (
     <View style={styles.post}>
       {/* POST HEADER */}
-
       <View style={styles.postHeader}>
         <Link
           href={
@@ -93,7 +119,6 @@ export default function Post({ post }: PostProps) {
           </TouchableOpacity>
         </Link>
 
-        {/* if i am the owner of the post show the delete button */}
         {post.author._id === currentUser?._id ? (
           <TouchableOpacity onPress={handleDelete}>
             <Ionicons name="trash-outline" size={20} color={COLORS.primary} />
@@ -109,7 +134,7 @@ export default function Post({ post }: PostProps) {
         )}
       </View>
 
-      {/*IMAGE */}
+      {/* IMAGE */}
       <Image
         source={post.imageUrl}
         style={styles.postImage}
@@ -118,22 +143,30 @@ export default function Post({ post }: PostProps) {
         cachePolicy="memory-disk"
       />
 
-      {/*POST ACTIONS */}
+      {/* POST ACTIONS */}
       <View style={styles.postActions}>
         <View style={styles.postActionsLeft}>
-          <TouchableOpacity onPress={handleLike}>
+          <TouchableOpacity style={styles.postActionsLeft} onPress={handleLike}>
             <Ionicons
               name={isLiked ? 'heart' : 'heart-outline'}
               size={24}
               color={isLiked ? COLORS.primary : COLORS.white}
             />
+            <Text style={styles.likesText}>
+              {likesCount.toLocaleString()} likes
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowComments(true)}>
+          <TouchableOpacity style={styles.postActionsLeft} onPress={() => setShowComments(true)}>
             <Ionicons
               name="chatbubble-outline"
               size={22}
               color={COLORS.white}
             />
+            {commentsCount > 0 && (
+              <Text style={styles.commentsText}>
+                {commentsCount} comments
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
         <TouchableOpacity onPress={handleBookmark}>
@@ -145,27 +178,13 @@ export default function Post({ post }: PostProps) {
         </TouchableOpacity>
       </View>
 
-      {/*POST INFO */}
+      {/* POST INFO */}
       <View style={styles.postInfo}>
-        <Text style={styles.likesText}>
-          {post.likes > 0
-            ? `${post.likes.toLocaleString()} likes`
-            : 'Be the first to like'}
-        </Text>
-
         {post.caption && (
           <View style={styles.captionContainer}>
             <Text style={styles.captionUsername}>{post.author.username}</Text>
             <Text style={styles.captionText}>{post.caption}</Text>
           </View>
-        )}
-
-        {post.comments > 0 && (
-          <TouchableOpacity>
-            <Text style={styles.commentsText}>
-              View all {post.comments} comments
-            </Text>
-          </TouchableOpacity>
         )}
 
         <Text style={styles.timeAgo}>
@@ -176,7 +195,9 @@ export default function Post({ post }: PostProps) {
       <CommentsModal
         postId={post._id}
         visible={showComments}
-        onClose={() => setShowComments(false)}      />
+        onClose={() => setShowComments(false)}
+        onCommentAdded={handleCommentAdded}
+      />
     </View>
   )
 }

@@ -22,12 +22,14 @@ type CommentsModal = {
   postId: Id<'posts'>
   visible: boolean
   onClose: () => void
+  onCommentAdded?: () => void
 }
 
 export default function CommentsModal({
   postId,
   visible,
   onClose,
+  onCommentAdded,
 }: CommentsModal) {
   const [newComment, setNewComment] = useState('')
   const comments = useQuery(api.comments.getComments, { postId })
@@ -37,6 +39,11 @@ export default function CommentsModal({
     if (!newComment.trim()) return // Prevent empty comments
     try {
       await addComment({ content: newComment, postId })
+      
+      // Notify parent component that a comment was added
+      if (onCommentAdded) {
+        onCommentAdded()
+      }
 
       setNewComment('') // Clear input
     } catch (error) {
