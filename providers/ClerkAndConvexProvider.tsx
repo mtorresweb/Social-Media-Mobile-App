@@ -3,6 +3,7 @@ import { tokenCache } from '@/cache'
 import { ConvexProviderWithClerk } from 'convex/react-clerk'
 import { ConvexReactClient } from 'convex/react'
 
+// Create a new ConvexReactClient with the updated URL format
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
 })
@@ -14,6 +15,7 @@ if (!publishableKey) {
     'Missing Publishable Key. Please set EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY in your .env'
   )
 }
+
 export default function ClerkAndConvexProvider({
   children,
 }: {

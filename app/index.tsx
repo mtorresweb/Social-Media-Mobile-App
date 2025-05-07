@@ -1,5 +1,7 @@
 import { Redirect } from 'expo-router'
+import { Platform } from 'react-native'
 
 export default function Index() {
-  return <Redirect href="../(auth)/login" />
+  // Utilizamos una ruta que funcione bien en ambas plataformas
+  return <Redirect href="/(auth)/login" />
 }

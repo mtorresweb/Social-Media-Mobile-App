@@ -3,11 +3,23 @@ import { styles } from '@/styles/auth.styles'
 import { useSSO } from '@clerk/clerk-expo'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
-import { View, Text, Image, TouchableOpacity } from 'react-native'
+import { View, Text, Image, TouchableOpacity, Platform, StatusBar } from 'react-native'
+import { useState, useEffect } from 'react'
 
 export default function login() {
   const { startSSOFlow } = useSSO()
   const router = useRouter()
+  const [loaded, setLoaded] = useState(false)
+
+  // Agregar un efecto para asegurarnos de que los elementos se carguen correctamente
+  useEffect(() => {
+    // Pequeño retraso para asegurar que los componentes se rendericen correctamente en Android
+    const timer = setTimeout(() => {
+      setLoaded(true)
+    }, 100)
+    
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleGoogleSignIn = async () => {
     try {
@@ -16,7 +28,8 @@ export default function login() {
       })
       if (setActive && createdSessionId) {
         setActive({ session: createdSessionId })
-        router.replace('../(tabs)')
+        // Fix the navigation path format for Expo Router v5+
+        router.replace('/(tabs)')
       }
     } catch (error) {
       console.error('OAuth error:', error)
@@ -24,11 +37,22 @@ export default function login() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { opacity: loaded ? 1 : (Platform.OS === 'android' ? 0.99 : 1) }]}>
+      {/* Asegurar que la barra de estado tenga el color correcto en Android */}
+      <StatusBar 
+        backgroundColor={COLORS.background} 
+        barStyle="light-content" 
+      />
+      
       <View style={styles.brandSection}>
-        <View style={styles.logoContainer}>
-          <Ionicons name="leaf" size={32} color={COLORS.primary} />
-        </View>
+        <Image
+          source={require('../../assets/images/icon.png')}
+          style={{
+            width: 32,
+            height: 32,
+          }}
+          resizeMode="cover"
+        />
         <Text style={styles.appName}>spotlight</Text>
         <Text style={styles.tagline}>don't miss anything</Text>
       </View>
@@ -36,7 +60,7 @@ export default function login() {
       {/*Illustration */}
       <View style={styles.illustrationContainer}>
         <Image
-          source={require('../../assets/images/auth-bg-1.png')}
+          source={require('../../assets/images/auth-illustration.png')}
           style={styles.illustration}
           resizeMode="cover"
         />

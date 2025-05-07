@@ -1,11 +1,20 @@
 // styles/notifications.styles.ts
-import { StyleSheet } from 'react-native'
+import { StyleSheet, Platform, StatusBar } from 'react-native'
 import { COLORS } from '@/constants/theme'
+
+// Calcular la altura del StatusBar para diferentes plataformas
+const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0
+// Altura de la barra de navegación inferior
+const BOTTOM_TAB_HEIGHT = 50  // Aseguramos suficiente espacio para la barra de tabs
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+    // Eliminamos el padding superior
+    paddingTop: 0,
+    // Mantenemos el espacio para la barra de navegación
+    paddingBottom: 60,
   },
   header: {
     paddingHorizontal: 16,

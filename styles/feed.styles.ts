@@ -1,14 +1,21 @@
 import { COLORS } from '@/constants/theme'
-import { Dimensions, Platform, StyleSheet } from 'react-native'
+import { Dimensions, Platform, StyleSheet, StatusBar } from 'react-native'
 
 const { width, height } = Dimensions.get('window')
 const isWeb = Platform.OS === 'web'
 const postWidth = isWeb ? Math.min(width, 600) : width
 
+// Calculamos una altura de StatusBar más precisa
+const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 20 : StatusBar.currentHeight || 0
+
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+    // Reducimos el padding superior para minimizar el espacio extra
+    paddingTop: 0,
+    // Aseguramos espacio suficiente para la barra de tabs
+    paddingBottom: 60,
   },
   header: {
     flexDirection: 'row',

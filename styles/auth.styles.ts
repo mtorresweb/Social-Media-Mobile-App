@@ -1,6 +1,6 @@
 //styles/auth.styles.ts
 import { COLORS } from '@/constants/theme'
-import { StyleSheet, Dimensions } from 'react-native'
+import { StyleSheet, Dimensions, Platform } from 'react-native'
 
 const { width, height } = Dimensions.get('window')
 
@@ -8,6 +8,11 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+    // Garantizar que la vista sea visible en Android
+    ...(Platform.OS === 'android' && {
+      position: 'relative',
+      zIndex: 1,
+    }),
   },
   brandSection: {
     alignItems: 'center',
@@ -71,7 +76,12 @@ export const styles = StyleSheet.create({
     },
     shadowOpacity: 0.15,
     shadowRadius: 12,
-    elevation: 5,
+    // Ajustar la elevación para Android
+    ...(Platform.OS === 'android' ? {
+      elevation: 8,
+    } : {
+      elevation: 5,
+    }),
   },
   googleIconContainer: {
     width: 24,

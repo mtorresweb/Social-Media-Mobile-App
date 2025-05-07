@@ -1,6 +1,7 @@
 import { COLORS } from '@/constants/theme'
 import { Ionicons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
+import { Platform } from 'react-native'
 
 export default function TabLayout() {
   return (
@@ -11,11 +12,12 @@ export default function TabLayout() {
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.grey,
         tabBarStyle: {
-          backgroundColor: 'black',
+          backgroundColor: COLORS.background,
           borderTopWidth: 0,
+          // Reactivamos la barra de navegación en ambas plataformas
           position: 'absolute',
           elevation: 0,
-          height: 40,
+          height: 60,
           paddingBottom: 8,
         },
       }}
